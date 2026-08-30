@@ -146,7 +146,7 @@
 
   /* ================= LIGHTBOX ================= */
   .lightbox{ border:none; padding:0; background:transparent; max-width:92vw; max-height:92vh; }
-  .lightbox::backdrop{ background:rgba(4,4,5,0.88); }
+  .lightbox::backdrop{ background:var(--ink); }
   .lightbox img{ display:block; max-width:92vw; max-height:92vh; width:auto; height:auto; }
 
   /* ================= ZONES (sober list, no cards) ================= */
@@ -173,27 +173,19 @@
   .tl-item p{ font-size:0.9rem; color:var(--text-dim); margin:0; max-width:52ch; }
 
   /* ================= FLOOR PLAN ================= */
-  .plan-scroll{
-    position:relative; margin-top:2rem;
-    width:100vw; max-width:1180px; left:50%; transform:translateX(-50%);
-  }
-  .plan-scroll::after{
-    content:""; position:absolute; top:1px; right:1px; bottom:1px; width:40px;
-    background:linear-gradient(to right, transparent, var(--surface) 70%);
-    pointer-events:none;
-  }
   .plan-frame{
-    border:1px solid var(--line); background:var(--surface);
+    position:relative; margin-top:2rem; border:1px solid var(--line); background:var(--surface);
     padding:clamp(1rem,2.4vw,1.8rem); overflow-x:auto; overflow-y:hidden;
+    width:100vw; max-width:1180px; left:50%; transform:translateX(-50%);
   }
   .plan-frame svg{ display:block; width:100%; min-width:900px; height:auto; }
   figure{ margin:0; }
   figcaption{ margin-top:0.9rem; font-size:0.85rem; color:var(--text-faint); max-width:60ch; }
-  .plan-hint{
-    display:none; margin-top:0.6rem; font-family:var(--mono); font-size:0.7rem;
-    letter-spacing:0.05em; color:var(--text-faint); text-align:center;
+  @media (max-width:960px){
+    .plan-frame{ overflow-x:visible; }
+    .plan-frame svg{ min-width:0; }
+    .js .plan-frame{ cursor:zoom-in; }
   }
-  @media (max-width:960px){ .plan-hint{ display:block; } }
   /* piezas del plano: el HTML entrega el sistema ya armado (estado final).
      .js las lleva a "sueltas" un instante y .wired las trae de vuelta a su lugar. */
   .node{ transform-box:fill-box; transform-origin:center; }
@@ -300,7 +292,6 @@
     <span class="eyebrow">Distribución</span>
     <h2>El plano</h2>
     <p class="lede">Esquema de distribución: el rincón fijo del mancuernero, la fila de bancos y máquinas con pasillo central despejado, el lounge y la sala de juegos como columna social.</p>
-    <div class="plan-scroll">
     <figure class="plan-frame">
       <svg viewBox="0 0 1200 760" role="img" aria-label="Plano de distribución de Gorilla Fitness: zona de hierro libre con mancuernero, espejo y logo backlit en la esquina; fila de bancos y máquinas con pasillo central despejado; lounge y sala de juegos en la columna derecha; recepción y vestuarios en la franja inferior.">
         <defs>
@@ -376,8 +367,6 @@
       </svg>
       <figcaption>Esquema de distribución, no a escala: zona de hierro libre, lounge, sala de juegos y recepción.</figcaption>
     </figure>
-    </div>
-    <p class="plan-hint">← Deslizá para ver el plano completo →</p>
   </div>
 </section>
 <div class="seam"></div>
@@ -483,6 +472,33 @@
         lightbox.showModal();
       });
     });
+
+    var planMQ = window.matchMedia('(max-width:960px)');
+    var planFrameEl = document.querySelector('.plan-frame');
+    if (planFrameEl) {
+      planFrameEl.addEventListener('click', function(){
+        if (!planMQ.matches) return;
+        var svg = planFrameEl.querySelector('svg').cloneNode(true);
+        svg.setAttribute('width', '1200');
+        svg.setAttribute('height', '760');
+        // el SVG clonado se aísla como imagen independiente: no hereda las
+        // variables CSS de la página, así que se las declaramos adentro.
+        var vars = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+        vars.textContent = ':root{' +
+          '--ink:#08080a;--surface:#141317;--line:rgba(237,234,228,.14);--line-strong:rgba(237,234,228,.28);' +
+          '--red:#a80903;--red-dim:#4a0602;--red-text:#e8362f;--red-large:#c21208;' +
+          '--text:#f1ede6;--text-dim:#a39d93;--text-faint:#948d80;' +
+          '--display:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;' +
+          '--body:"Hanken Grotesk","Helvetica Neue",Arial,sans-serif;' +
+          '--mono:"IBM Plex Mono","Courier New",monospace;}';
+        svg.insertBefore(vars, svg.firstChild);
+        var xml = new XMLSerializer().serializeToString(svg);
+        lightboxImg.src = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(xml)));
+        lightboxImg.alt = svg.getAttribute('aria-label') || 'Plano de distribución';
+        lightbox.showModal();
+      });
+    }
+
     lightbox.addEventListener('click', function(e){
       if (e.target === lightbox) lightbox.close();
     });
